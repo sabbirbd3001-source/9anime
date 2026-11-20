@@ -38,7 +38,7 @@ subprojects {
 
     cloudstream {
         // Automatically populated in GitHub Actions ($GITHUB_REPOSITORY)
-        setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/user/cloudstream-9animes")
+        setRepo(System.getenv("GITHUB_REPOSITORY") ?: "https://github.com/sabbirbd3001-source/9anime")
     }
 
     android {

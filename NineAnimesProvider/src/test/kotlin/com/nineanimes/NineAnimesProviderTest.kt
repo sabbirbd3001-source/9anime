@@ -29,12 +29,32 @@ class NineAnimesProviderTest {
     }
 
     @Test
+    fun testMainPageSections() {
+        val sections = provider.mainPage
+        assertEquals(6, sections.size)
+        assertEquals("https://9animes.cam/popular/", sections[0].data)
+        assertEquals("Popular Anime", sections[0].name)
+        assertEquals("https://9animes.cam/latest-episodes/", sections[1].data)
+        assertEquals("Latest Episodes", sections[1].name)
+        assertEquals("https://9animes.cam/new/", sections[2].data)
+        assertEquals("Recently Added", sections[2].name)
+        assertEquals("https://9animes.cam/movie/", sections[3].data)
+        assertEquals("Anime Movies", sections[3].name)
+        assertEquals("https://9animes.cam/top-airing/", sections[4].data)
+        assertEquals("Top Airing", sections[4].name)
+        assertEquals("https://9animes.cam/coming-soon/", sections[5].data)
+        assertEquals("Coming Soon", sections[5].name)
+    }
+
+    @Test
     fun testTypeDetection() {
         assertEquals(TvType.AnimeMovie, NineAnimesProvider.getType("Movie"))
         assertEquals(TvType.AnimeMovie, NineAnimesProvider.getType("Anime Movie (Sub)"))
         assertEquals(TvType.OVA, NineAnimesProvider.getType("OVA"))
         assertEquals(TvType.OVA, NineAnimesProvider.getType("Special Episode"))
         assertEquals(TvType.Anime, NineAnimesProvider.getType("TV Series"))
+        assertEquals(TvType.Anime, NineAnimesProvider.getType("TV"))
+        assertEquals(TvType.Anime, NineAnimesProvider.getType("ONA"))
         assertEquals(TvType.Anime, NineAnimesProvider.getType(null))
     }
 
@@ -54,85 +74,140 @@ class NineAnimesProviderTest {
         assertEquals("Naruto Shippuden", NineAnimesProvider.cleanTitle("Naruto Shippuden - 9Anime"))
         assertEquals("Bleach", NineAnimesProvider.cleanTitle("Bleach | 9Anime"))
         assertEquals("Attack on Titan", NineAnimesProvider.cleanTitle("Watch Attack on Titan Dub Online"))
+        assertEquals("Black Clover", NineAnimesProvider.cleanTitle("Black Clover - Anime Episodes Online | 9Anime"))
         assertEquals("Jujutsu Kaisen", NineAnimesProvider.cleanTitle("Jujutsu Kaisen"))
     }
 
     @Test
-    fun testParseCardsHtml() {
+    fun testParseRealAnimeCardHtml() {
         val sampleHtml = """
             <html>
             <body>
-                <div class="cards-grid">
-                    <a href="/watch/one-piece/" title="One Piece">
-                        <img data-src="https://img.9animes.cam/posters/one-piece.jpg" alt="One Piece" />
-                        <span class="anime-name">One Piece</span>
-                        <div class="tick-sub">1080</div>
-                        <div class="tick-dub">1050</div>
-                    </a>
-                    <a href="/watch/naruto-shippuden/" title="Naruto Shippuden">
-                        <img data-original="https://img.9animes.cam/posters/naruto.jpg" alt="Naruto" />
-                        <span class="anime-name">Naruto Shippuden</span>
-                        <div class="tick-sub">500</div>
-                    </a>
-                    <a href="#" title="Dummy Banner">
-                        <span class="anime-name">Should Be Ignored</span>
-                    </a>
-                    <a href="javascript:void(0)" title="JS Void">
-                        <span class="anime-name">Should Be Ignored Too</span>
-                    </a>
+                <div class="content-section">
+                    <div class="anime-card" data-qtip-id="2602" data-qtip-link="https://9animes.cam/watch/black-clover/">
+                        <a class="anime-card-link" href="https://9animes.cam/watch/black-clover/" title="Black Clover">
+                            <div class="anime-card-image">
+                                <img alt="Black Clover" class="lazy" data-src="https://i1.wp.com/image.tmdb.org/t/p/w500/uZUtoVChBGhNj9OfrM2LYpwBm8E.jpg" src="data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjMwIDM0NSI+PC9zdmc+" width="230" height="345"/>
+                                <span class="anime-card-badge badge-year">2026</span>
+                                <span class="anime-card-badge badge-episodes">Ep 196</span>
+                            </div>
+                            <div class="anime-card-body">
+                                <h2 class="anime-card-title anime-name" data-title-en="Black Clover" data-title-jp="">Black Clover</h2>
+                                <div class="anime-card-meta">
+                                    <span>TV</span>
+                                    <span class="anime-card-rating">8.9</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="anime-card" data-qtip-id="53" data-qtip-link="https://9animes.cam/watch/one-piece/">
+                        <a class="anime-card-link" href="https://9animes.cam/watch/one-piece/" title="One Piece">
+                            <div class="anime-card-image">
+                                <img alt="One Piece" class="lazy" data-src="https://i1.wp.com/image.tmdb.org/t/p/w500/dB4EDhre2dsC2kxYDavyKWqLQwi.jpg" src="data:image/svg+xml;base64,placeholder" width="230" height="345"/>
+                                <span class="anime-card-badge badge-episodes">Ep 1180</span>
+                            </div>
+                            <div class="anime-card-body">
+                                <h2 class="anime-card-title anime-name">One Piece</h2>
+                                <div class="anime-card-meta">
+                                    <span>TV</span>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <!-- Invalid cards should be ignored -->
+                    <div class="anime-card">
+                        <a class="anime-card-link" href="#" title="Dummy">
+                            <h2 class="anime-card-title">Empty Link</h2>
+                        </a>
+                    </div>
+                    <div class="anime-card">
+                        <a class="anime-card-link" href="javascript:void(0)" title="JS Void">
+                            <h2 class="anime-card-title">JS Link</h2>
+                        </a>
+                    </div>
                 </div>
             </body>
             </html>
         """.trimIndent()
 
         val doc = Jsoup.parse(sampleHtml, "https://9animes.cam")
-        val cards = doc.select("div.cards-grid > a")
-        assertEquals(4, cards.size)
+        val parsed = provider.parseCards(doc)
 
-        // Test valid card attributes
-        val validCards = cards.filter {
-            val href = it.attr("href").trim()
-            href.isNotBlank() && href != "#" && !href.startsWith("javascript:")
-        }
-        assertEquals(2, validCards.size)
+        assertEquals(2, parsed.size)
 
-        val first = validCards[0]
-        assertEquals("One Piece", first.attr("title"))
-        assertEquals("/watch/one-piece/", first.attr("href"))
-        assertEquals("https://img.9animes.cam/posters/one-piece.jpg", first.selectFirst("img")?.attr("data-src"))
+        val first = parsed[0]
+        assertEquals("Black Clover", first.name)
+        assertEquals("https://9animes.cam/watch/black-clover/", first.url)
+        assertEquals("https://i1.wp.com/image.tmdb.org/t/p/w500/uZUtoVChBGhNj9OfrM2LYpwBm8E.jpg", first.posterUrl)
+        assertEquals(TvType.Anime, first.type)
 
-        val second = validCards[1]
-        assertEquals("https://img.9animes.cam/posters/naruto.jpg", second.selectFirst("img")?.attr("data-original"))
+        val second = parsed[1]
+        assertEquals("One Piece", second.name)
+        assertEquals("https://9animes.cam/watch/one-piece/", second.url)
+        assertEquals("https://i1.wp.com/image.tmdb.org/t/p/w500/dB4EDhre2dsC2kxYDavyKWqLQwi.jpg", second.posterUrl)
     }
 
     @Test
-    fun testParseDetailPageHtmlWithTrailer() {
+    fun testParseRealDetailPageHtml() {
         val sampleDetailHtml = """
             <html>
             <head>
-                <meta property="og:title" content="Watch One Piece English Subbed Online Free on 9Anime" />
-                <meta property="og:image" content="https://img.9animes.cam/cover/one-piece.jpg" />
-                <meta name="description" content="Gol D. Roger was known as the Pirate King..." />
+                <meta property="og:title" content="Black Clover - Anime Episodes Online | 9Anime" />
+                <title>Black Clover - Anime Episodes Online | 9Anime</title>
             </head>
             <body>
-                <div class="film-info">
-                    <h1 class="film-name">One Piece</h1>
-                    <div class="meta-data">
-                        <span>Format: TV Series</span>
-                        <span>Premiered: 1999</span>
-                        <span>Status: Ongoing</span>
+                <div class="movie-detail show-detail show-detail-v2">
+                    <div class="container">
+                        <div class="detail-main-content">
+                            <div class="detail-card">
+                                <div class="detail-poster">
+                                    <img class="poster-img" src="https://i1.wp.com/image.tmdb.org/t/p/w500/uZUtoVChBGhNj9OfrM2LYpwBm8E.jpg?ssl=1&resize=230,345" alt="Black Clover" />
+                                </div>
+                                <div class="detail-info">
+                                    <h1 class="detail-title dynamic-name" data-jname="Black Clover">Black Clover</h1>
+                                    <div class="detail-alt-titles">ブラッククローバー 2nd season</div>
+                                    <div class="detail-description">
+                                        Asta and Yuno are two orphans who want the same thing: to become the Wizard King.
+                                    </div>
+                                    <div class="detail-meta">
+                                        <div class="meta-column">
+                                            <div class="meta-row">
+                                                <span class="meta-label">Type:</span>
+                                                <span class="meta-value"><a href="https://9animes.cam/type/tv/">TV</a></span>
+                                            </div>
+                                            <div class="meta-row">
+                                                <span class="meta-label">Date aired:</span>
+                                                <span class="meta-value">Oct 3, 2026 to ?</span>
+                                            </div>
+                                            <div class="meta-row">
+                                                <span class="meta-label">Status:</span>
+                                                <span class="meta-value">Currently Airing</span>
+                                            </div>
+                                            <div class="meta-row">
+                                                <span class="meta-label">Genre:</span>
+                                                <span class="meta-value">
+                                                    <a href="https://9animes.cam/genre/action/">Action</a>,
+                                                    <a href="https://9animes.cam/genre/fantasy/">Fantasy</a>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="meta-column">
+                                            <div class="meta-row">
+                                                <span class="meta-label">Premiered:</span>
+                                                <span class="meta-value">Fall 2026</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="season-section">
+                                <div class="season-list">
+                                    <a class="season-pill" href="https://9animes.cam/watch/black-clover/season/1/">1. Season 1</a>
+                                    <a class="season-pill" href="https://9animes.cam/watch/black-clover/season/2/">2. Season 2</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="genres">
-                        <a href="/genre/action/">Action</a>
-                        <a href="/genre/adventure/">Adventure</a>
-                        <a href="/genre/fantasy/">Fantasy</a>
-                    </div>
-                    <p class="description">Gol D. Roger was known as the Pirate King...</p>
-                    <iframe src="https://www.youtube.com/embed/sampletrailer123"></iframe>
-                </div>
-                <div class="episodes-list">
-                    <a href="/watch/one-piece/ep-1">Episode 1 - I'm Luffy! The Man Who Will Become the Pirate King!</a>
-                    <a href="/watch/one-piece/ep-2">Episode 2 - The Great Swordsman Appears! Pirate Hunter Roronoa Zoro</a>
                 </div>
             </body>
             </html>
@@ -140,69 +215,44 @@ class NineAnimesProviderTest {
 
         val doc = Jsoup.parse(sampleDetailHtml, "https://9animes.cam")
 
-        val rawTitle = doc.selectFirst("h1, .film-name")?.text() ?: ""
+        val rawTitle = doc.selectFirst("h1.detail-title, h1.dynamic-name")?.text()?.trim() ?: ""
         val title = NineAnimesProvider.cleanTitle(rawTitle)
-        assertEquals("One Piece", title)
+        assertEquals("Black Clover", title)
 
-        val formatText = doc.select(".meta-data").text()
-        val type = NineAnimesProvider.getType(formatText)
-        assertEquals(TvType.Anime, type)
+        val poster = doc.selectFirst(".detail-poster img")?.attr("src")
+        assertEquals("https://i1.wp.com/image.tmdb.org/t/p/w500/uZUtoVChBGhNj9OfrM2LYpwBm8E.jpg?ssl=1&resize=230,345", poster)
 
-        val year = Regex("""\b(19\d\d|20\d\d)\b""").find(formatText)?.value?.toIntOrNull()
-        assertEquals(1999, year)
+        val plot = doc.selectFirst(".detail-description")?.text()?.trim()
+        assertEquals("Asta and Yuno are two orphans who want the same thing: to become the Wizard King.", plot)
 
-        val genres = doc.select(".genres a").map { it.text() }
-        assertEquals(listOf("Action", "Adventure", "Fantasy"), genres)
+        val genres = doc.select(".meta-row a[href*='/genre/']").map { it.text().trim() }
+        assertEquals(listOf("Action", "Fantasy"), genres)
 
-        val trailer = doc.selectFirst("iframe[src*='youtube.com']")?.attr("src")
-        assertEquals("https://www.youtube.com/embed/sampletrailer123", trailer)
-
-        val episodes = doc.select(".episodes-list a")
-        assertEquals(2, episodes.size)
-        assertEquals("/watch/one-piece/ep-1", episodes[0].attr("href"))
+        val seasons = doc.select(".season-list a.season-pill")
+        assertEquals(2, seasons.size)
+        assertEquals("https://9animes.cam/watch/black-clover/season/1/", seasons[0].attr("href"))
+        assertEquals("https://9animes.cam/watch/black-clover/season/2/", seasons[1].attr("href"))
     }
 
     @Test
-    fun testParseDetailPageWithJavaScriptEpisodes() {
-        val sampleJsEpHtml = """
+    fun testParseDirectEpisodesListHtml() {
+        val sampleEpDoc = """
             <html>
             <body>
-                <div class="film-info">
-                    <h1 class="film-name">Solo Leveling</h1>
-                    <div class="meta-data">
-                        <span>Status: Completed</span>
-                        <span>Released: 2024</span>
-                    </div>
-                </div>
                 <div class="episodes-list">
-                    <a class="ep-item" href="javascript:void(0)" data-id="99101" data-number="1" title="Episode 1">1</a>
-                    <a class="ep-item" href="javascript:void(0)" data-id="99102" data-number="2" title="Episode 2">2</a>
-                    <a class="ep-item" href="#" data-id="99103" data-number="3" title="Episode 3">3</a>
+                    <a class="ep-item" href="/watch/naruto/ep-1" title="Episode 1">Ep 1</a>
+                    <a class="ep-item" href="/watch/naruto/ep-2" title="Episode 2">Ep 2</a>
+                    <a class="ep-item" href="/watch/naruto/ep-3" title="Episode 3">Ep 3</a>
                 </div>
             </body>
             </html>
         """.trimIndent()
 
-        val doc = Jsoup.parse(sampleJsEpHtml, "https://9animes.cam")
-        val epElements = doc.select(".ep-item")
-        assertEquals(3, epElements.size)
-
-        val baseUrl = "https://9animes.cam/watch/solo-leveling"
-        val constructedUrls = epElements.mapIndexed { index, elem ->
-            val hrefAttr = elem.attr("href").trim()
-            val dataId = elem.attr("data-id")
-            val dataNumber = elem.attr("data-number")
-
-            when {
-                hrefAttr.isNotBlank() && !hrefAttr.startsWith("#") && !hrefAttr.startsWith("javascript:") -> hrefAttr
-                dataId.isNotBlank() -> "$baseUrl?ep=$dataId"
-                else -> "$baseUrl?ep=${index + 1}"
-            }
-        }
-
-        assertEquals("https://9animes.cam/watch/solo-leveling?ep=99101", constructedUrls[0])
-        assertEquals("https://9animes.cam/watch/solo-leveling?ep=99102", constructedUrls[1])
-        assertEquals("https://9animes.cam/watch/solo-leveling?ep=99103", constructedUrls[2])
+        val doc = Jsoup.parse(sampleEpDoc, "https://9animes.cam")
+        val episodes = doc.select(".episodes-list a")
+        assertEquals(3, episodes.size)
+        assertEquals("/watch/naruto/ep-1", episodes[0].attr("href"))
+        assertEquals("Episode 1", episodes[0].attr("title"))
     }
 
     @Test
@@ -212,15 +262,14 @@ class NineAnimesProviderTest {
             <body>
                 <div id="player">
                     <iframe id="main-embed" src="https://streamtape.com/e/6289vXyZ/"></iframe>
+                    <!-- Ad and youtube iframes should be filtered -->
+                    <iframe src="https://www.google.com/ads"></iframe>
+                    <iframe src="https://www.youtube.com/embed/dummy"></iframe>
                 </div>
                 <div class="servers">
                     <button class="server-item" data-src="https://filemoon.sx/e/xyz123">Filemoon</button>
                     <button class="server-item" data-src="https://www.mp4upload.com/embed-abc.html">Mp4Upload</button>
-                </div>
-                <!-- Lazy loaded thumbnails should be ignored by server sources -->
-                <div class="recommended">
-                    <img data-src="https://img.9animes.cam/posters/recom1.jpg" alt="Poster 1" />
-                    <img data-src="https://img.9animes.cam/posters/recom2.png" alt="Poster 2" />
+                    <button class="server-item" data-src="https://img.9animes.cam/ad.png">Image Ad</button>
                 </div>
                 <video>
                     <source src="https://cdn.example.com/direct/video.mp4" type="video/mp4" />
@@ -234,14 +283,17 @@ class NineAnimesProviderTest {
 
         val doc = Jsoup.parse(samplePlayerHtml, "https://9animes.cam")
 
-        // 1. Iframe verification
-        val mainIframe = doc.selectFirst("iframe#main-embed")?.attr("src")
-        assertEquals("https://streamtape.com/e/6289vXyZ/", mainIframe)
+        // 1. Iframe verification (excluding google/youtube)
+        val validIframes = doc.select("iframe").mapNotNull { it.attr("src") }.filter {
+            it.isNotBlank() && !it.contains("google") && !it.contains("youtube")
+        }
+        assertEquals(1, validIframes.size)
+        assertEquals("https://streamtape.com/e/6289vXyZ/", validIframes[0])
 
         // 2. Server button extraction excludes images
-        val serverSources = doc.select(".server-item[data-src], button[data-src]").mapNotNull {
+        val serverSources = doc.select(".server-item[data-src]").mapNotNull {
             val src = it.attr("data-src")
-            if (src.endsWith(".jpg") || src.endsWith(".png")) null else src
+            if (src.endsWith(".png") || src.endsWith(".jpg")) null else src
         }
         assertEquals(2, serverSources.size)
         assertTrue(serverSources.contains("https://filemoon.sx/e/xyz123"))
