@@ -1,0 +1,26 @@
+[
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=9animes.cam&sz=%size%",
+        "jarFileSize": 85316,
+        "fileHash": "sha256-5301f0bca61b4d390bc05404fb38ca0fe81d85702ec2264bacef10662c0595b7",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/sabbirbd3001-source/9anime",
+        "fileSize": 26161,
+        "status": 1,
+        "authors": [
+            "sabbirbd3001"
+        ],
+        "tvTypes": [
+            "Anime",
+            "AnimeMovie",
+            "OVA"
+        ],
+        "version": 1,
+        "internalName": "NineAnimesProvider",
+        "jarUrl": "https://raw.githubusercontent.com/sabbirbd3001-source/9anime/builds/NineAnimesProvider.jar",
+        "description": "Watch anime online with sub and dub from 9animes.cam",
+        "url": "https://raw.githubusercontent.com/sabbirbd3001-source/9anime/builds/NineAnimesProvider.cs3",
+        "name": "NineAnimesProvider",
+        "jarHash": "sha256-823d83f9c129a303264279ca58ca01f3668b74277d9beb6fef07cbf753319f90"
+    }
+]
