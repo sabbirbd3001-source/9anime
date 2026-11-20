@@ -1,8 +1,8 @@
-version = 1
+version = 2
 
 cloudstream {
     description = "Watch anime online with sub and dub from 9animes.cam"
-    authors = listOf("Cloudstream Community")
+    authors = listOf("sabbirbd3001")
 
     /**
      * Status int:
